@@ -5,22 +5,24 @@
 # Get all available regions
 regions=$(aws ec2 describe-regions --query "Regions[].RegionName" --output text)
 
-echo -n "Looking for running instances, please wait"
+printf "Looking for running instances, please wait"
 
 # animate the loading message
 for i in {1..5}
 do
-    echo -n '.'
+    printf "."
     sleep 0.5
 done
+
+printf "\n"
 
 for region in $regions
 do
     # List all running instances
     instances=$(aws ec2 describe-instances --region $region --query "Reservations[*].Instances[*].[InstanceId,InstanceType,State.Name,Tags[?Key=='Name'].Value|[0],PrivateIpAddress,PublicIpAddress]" --output table --filters "Name=instance-state-name,Values=running")
     if [ -n "$instances" ]; then
-        echo "Instances running in $region"
-        echo "================================="
+        printf "Instances running in %s\n=================================\n" "$region"
+        echo "InstanceId       InstanceType    State    Name    PrivateIpAddress    PublicIpAddress    Region"
         echo "$instances"
     fi
 done
