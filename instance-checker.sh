@@ -19,10 +19,8 @@ printf "\n"
 for region in $regions
 do
     # List all running instances
-    instances=$(aws ec2 describe-instances --region $region --query "Reservations[*].Instances[*].[InstanceId,InstanceType,State.Name,Tags[?Key=='Name'].Value|[0],PrivateIpAddress,PublicIpAddress]" --output table --filters "Name=instance-state-name,Values=running")
+    instances=$(aws ec2 describe-instances --region $region --query "Reservations[*].Instances[*].['InstanceId','InstanceType','State','Name','PrivateIpAddress','PublicIpAddress', 'Placement.AvailabilityZone']" --output table --filters "Name=instance-state-name,Values=running")
     if [ -n "$instances" ]; then
-        printf "Instances running in %s\n=================================\n" "$region"
-        echo "InstanceId       InstanceType    State    Name    PrivateIpAddress    PublicIpAddress    Region"
         echo "$instances"
     fi
 done
