@@ -9,7 +9,7 @@ for region in $regions
 do
     echo "Checking resources in region: $region"
     echo "======================="
-    
+
     # list all running ec2 instances
     ec2_output=$(aws ec2 describe-instances --region $region --query "Reservations[*].Instances[*].[InstanceId,InstanceType,State.Name]" --output text --filters "Name=instance-state-name,Values=running")
     if [ -z "$ec2_output" ]; then
@@ -42,8 +42,8 @@ do
         echo "$elb_output" | column -t
     fi
 
-    # list all running auto scaling groups
-    asg_output=$(aws autoscaling describe-auto-scaling-groups --region $region --query "AutoScalingGroups[*].[AutoScalingGroupName,MinSize,MaxSize,DesiredCapacity,Status]" --output text --filters "Name=DesiredCapacity,Values=1")
+    # list all auto-scaling groups that have at least one instance in service
+    asg_output=$(aws autoscaling describe-auto-scaling-groups --region $region --query "AutoScalingGroups[*].[AutoScalingGroupName,MinSize,MaxSize,DesiredCapacity,Status]" --output text --filters "Name=LifecycleState,Values=InService")
     if [ -z "$asg_output" ]; then
         echo "None"
     else
