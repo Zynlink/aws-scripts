@@ -2,17 +2,52 @@
 
 # AWS CLI must be installed and configured with appropriate credentials
 
-# list all running ec2 instances
-aws ec2 describe-instances --query "Reservations[*].Instances[*].[InstanceId,InstanceType,State.Name]" --output table --filters "Name=instance-state-name,Values=running"
+# get all available regions
+regions=$(aws ec2 describe-regions --query "Regions[].RegionName" --output text)
 
-# list all running RDS instances
-aws rds describe-db-instances --query "DBInstances[*].[DBInstanceIdentifier,DBInstanceClass,Engine,DBInstanceStatus]" --output table --filters "Name=DBInstanceStatus,Values=available"
+for region in $regions
+do
+    echo "Checking resources in region: $region"
+    echo "======================="
+    
+    # list all running ec2 instances
+    ec2_output=$(aws ec2 describe-instances --region $region --query "Reservations[*].Instances[*].[InstanceId,InstanceType,State.Name]" --output text --filters "Name=instance-state-name,Values=running")
+    if [ -z "$ec2_output" ]; then
+        echo "None"
+    else
+        echo "$ec2_output" | column -t
+    fi
 
-# list all running elasticache instances
-aws elasticache describe-cache-clusters --query "CacheClusters[*].[CacheClusterId,CacheNodeType,Engine,CacheClusterStatus]" --output table --filters "Name=CacheClusterStatus,Values=available"
+    # list all running RDS instances
+    rds_output=$(aws rds describe-db-instances --region $region --query "DBInstances[*].[DBInstanceIdentifier,DBInstanceClass,Engine,DBInstanceStatus]" --output text --filters "Name=DBInstanceStatus,Values=available")
+    if [ -z "$rds_output" ]; then
+        echo "None"
+    else
+        echo "$rds_output" | column -t
+    fi
 
-# list all running load balancers
-aws elbv2 describe-load-balancers --query "LoadBalancers[*].[LoadBalancerName,Type,DNSName,State]" --output table --filters "Name=state,Values=active"
+    # list all running elasticache instances
+    elasticache_output=$(aws elasticache describe-cache-clusters --region $region --query "CacheClusters[*].[CacheClusterId,CacheNodeType,Engine,CacheClusterStatus]" --output text --filters "Name=CacheClusterStatus,Values=available")
+    if [ -z "$elasticache_output" ]; then
+        echo "None"
+    else
+        echo "$elasticache_output" | column -t
+    fi
 
-# list all running auto scaling groups
-aws autoscaling describe-auto-scaling-groups --query "AutoScalingGroups[*].[AutoScalingGroupName,MinSize,MaxSize,DesiredCapacity,Status]" --output table --filters "Name=DesiredCapacity,Values=1"
+    # list all running load balancers
+    elb_output=$(aws elbv2 describe-load-balancers --region $region --query "LoadBalancers[*].[LoadBalancerName,Type,DNSName,State]" --output text --filters "Name=state,Values=active")
+    if [ -z "$elb_output" ]; then
+        echo "None"
+    else
+        echo "$elb_output" | column -t
+    fi
+
+    # list all running auto scaling groups
+    asg_output=$(aws autoscaling describe-auto-scaling-groups --region $region --query "AutoScalingGroups[*].[AutoScalingGroupName,MinSize,MaxSize,DesiredCapacity,Status]" --output text --filters "Name=DesiredCapacity,Values=1")
+    if [ -z "$asg_output" ]; then
+        echo "None"
+    else
+        echo "$asg_output" | column -t
+    fi
+    echo 
+done
