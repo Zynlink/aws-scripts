@@ -5,6 +5,15 @@
 # Get all available regions
 regions=$(aws ec2 describe-regions --query "Regions[].RegionName" --output text)
 
+echo "Looking for running instances, please wait..."
+
+# animate the loading message
+for i in {1..5}
+do
+    echo -n '.'
+    sleep 0.5
+done
+
 for region in $regions
 do
     # List all running instances
