@@ -9,15 +9,11 @@ now = datetime.now()
 end = now.strftime('%Y-%m-%d')
 start = (now - timedelta(days=30)).strftime('%Y-%m-%d')
 
-result = ce.get_cost_and_usage(
+result = ce.get_reservation_utilization(
     TimePeriod={
         'Start': start,
         'End': end
     },
-    Granularity='DAILY',
-    Metrics=[
-        'BlendedCost'
-    ],
     GroupBy=[
         {
             'Type': 'DIMENSION',
@@ -32,9 +28,9 @@ result = ce.get_cost_and_usage(
 
 # Extract the cost of running instances
 total_cost = 0
-for group in result['ResultsByTime'][0]['Groups']:
+for group in result['UtilizationsByTime'][0]['Groups']:
     if group['Keys'][0] == 'EC2':
-        cost = group['Metrics']['BlendedCost']['Amount']
+        cost = group['Total']['UnblendedCost']['Amount']
         total_cost += float(cost)
 
 print(f'The total cost of running instances is ${total_cost}')
