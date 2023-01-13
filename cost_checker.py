@@ -17,20 +17,15 @@ result = ce.get_reservation_utilization(
     GroupBy=[
         {
             'Type': 'DIMENSION',
-            'Key': 'SERVICE'
+            'Key': 'SUBSCRIPTION_ID'
         },
-        {
-            'Type': 'TAG',
-            'Key': 'Name'
-        }
     ]
 )
 
 # Extract the cost of running instances
 total_cost = 0
 for group in result['UtilizationsByTime'][0]['Groups']:
-    if group['Keys'][0] == 'EC2':
-        cost = group['Total']['UnblendedCost']['Amount']
-        total_cost += float(cost)
+    cost = group['Total']['UnblendedCost']['Amount']
+    total_cost += float(cost)
 
 print(f'The total cost of running instances is ${total_cost}')
