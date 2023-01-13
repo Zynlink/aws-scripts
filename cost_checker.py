@@ -8,20 +8,13 @@ response = ec2.describe_instances(Filters=[{'Name': 'instance-state-name', 'Valu
 
 # Get the cost of each instance
 total_cost = 0
+pricing = boto3.client('pricing')
 for reservation in response['Reservations']:
     for instance in reservation['Instances']:
         instance_type = instance['InstanceType']
         region = instance['Placement']['AvailabilityZone'][:-1]
-        pricing = boto3.client('pricing', region_name=region)
-        price_data = pricing.get_products(
-            ServiceCode='AmazonEC2',
-            Filters=[
-                {'Type': 'TERM_MATCH', 'Field': 'instanceType', 'Value': instance_type},
-                {'Type': 'TERM_MATCH', 'Field': 'operatingSystem', 'Value': 'Linux'},
-                {'Type': 'TERM_MATCH', 'Field': 'tenancy', 'Value': 'Shared'}
-            ]
-        )
-        price = float(price_data['PriceList'][0]['price']['USD'])
-        total_cost += price
+        instance_data = pricing.describe_instance_types(InstanceTypes=[instance_type])
+        hourly_rate = instance_data['PriceList'][0]['terms']['OnDemand'][instance_type]['priceDimensions']['pricePerUnit']['USD']
+        total_cost += hourly_rate
 
 print(f'The total cost of running instances is ${total_cost}')
