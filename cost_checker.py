@@ -1,19 +1,40 @@
 import boto3
+from datetime import datetime, timedelta
 
-# Connect to the EC2 service
-ec2 = boto3.client('ec2')
+# Connect to the Cost Explorer service
+ce = boto3.client('ce')
 
-# Get a list of all running instances
-response = ec2.describe_instances(Filters=[{'Name': 'instance-state-name', 'Values': ['running']}])
+# Get the cost of running instances for the last 30 days
+now = datetime.now()
+end = now.strftime('%Y-%m-%d')
+start = (now - timedelta(days=30)).strftime('%Y-%m-%d')
 
-# Get the cost of each instance
+result = ce.get_cost_and_usage(
+    TimePeriod={
+        'Start': start,
+        'End': end
+    },
+    Granularity='DAILY',
+    Metrics=[
+        'BlendedCost'
+    ],
+    GroupBy=[
+        {
+            'Type': 'DIMENSION',
+            'Key': 'SERVICE'
+        },
+        {
+            'Type': 'TAG',
+            'Key': 'Name'
+        }
+    ]
+)
+
+# Extract the cost of running instances
 total_cost = 0
-for reservation in response['Reservations']:
-    for instance in reservation['Instances']:
-        instance_type = instance['InstanceType']
-        region = instance['Placement']['AvailabilityZone'][:-1]
-        instance_data = ec2.describe_instance_types(InstanceTypes=[instance_type])
-        hourly_rate = instance_data['InstanceTypes'][0]['Price']['USD']
-        total_cost += hourly_rate
+for group in result['ResultsByTime'][0]['Groups']:
+    if group['Keys'][0] == 'EC2':
+        cost = group['Metrics']['BlendedCost']['Amount']
+        total_cost += float(cost)
 
 print(f'The total cost of running instances is ${total_cost}')
