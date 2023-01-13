@@ -12,14 +12,15 @@ for reservation in response['Reservations']:
     for instance in reservation['Instances']:
         instance_type = instance['InstanceType']
         region = instance['Placement']['AvailabilityZone'][:-1]
-        price = boto3.client('pricing', region_name=region).get_products(
+        price_data = boto3.client('pricing', region_name=region).get_products(
             ServiceCode='AmazonEC2',
             Filters=[
                 {'Type': 'TERM_MATCH', 'Field': 'instanceType', 'Value': instance_type},
                 {'Type': 'TERM_MATCH', 'Field': 'operatingSystem', 'Value': 'Linux'},
                 {'Type': 'TERM_MATCH', 'Field': 'tenancy', 'Value': 'Shared'}
             ]
-        )['PriceList'][0]['priceDimensions']['OnDemand']['pricePerUnit']['USD']
+        )
+        price = price_data['PriceList'][0]['terms']['OnDemand'][instance_type]['priceDimensions']['pricePerUnit']['USD']
         total_cost += price
 
 print(f'The total cost of running instances is ${total_cost}')
